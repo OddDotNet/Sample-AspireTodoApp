@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Net.Http.Json;
-using System.Text;
 using Google.Protobuf;
 using Grpc.Net.Client;
 using OddDotCSharp;
@@ -74,7 +73,7 @@ public class GetTodosShould
             })
             .Build();
         
-        var channel = GrpcChannel.ForAddress("http://localhost:4317");
+        var channel = GrpcChannel.ForAddress(app.GetEndpoint("odddotnet", "grpc"));
         var spanQueryServiceClient = new SpanQueryService.SpanQueryServiceClient(channel);
         
         var spanQueryResponse = await spanQueryServiceClient.QueryAsync(spanQueryRequest);
