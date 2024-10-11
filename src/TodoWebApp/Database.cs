@@ -4,7 +4,7 @@ namespace TodoWebApp;
 
 public class TodoDbContext(DbContextOptions<TodoDbContext> options) : DbContext(options)
 {
-    public DbSet<TodoItem> TodoItems { get; set; }
+    public DbSet<TodoItem> TodoItems { get; init; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

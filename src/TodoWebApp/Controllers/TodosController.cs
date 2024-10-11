@@ -38,6 +38,13 @@ public class TodosController(TodoDbContext dbContext, IMemoryCache cache) : Cont
     }
 
     [HttpGet("{id:int}")]
+    [SwaggerOperation(
+        Summary = "Get an existing TODO Item",
+        Description = "Repeat requests are cached for 30 seconds"
+    )]
+    [SwaggerResponse(statusCode: 200, "The TODO Item", typeof(TodoItemModel), ["application/json"])]
+    [SwaggerResponse(statusCode: 400, "The Id is not an integer", typeof(ProblemDetails), ["application/json"])]
+    [SwaggerResponse(statusCode: 404, "The TODO Item could not be found", typeof(ProblemDetails), ["application/json"])]
     public async Task<Results<Ok<TodoItemModel>, NotFound>> GetTodoItem([FromRoute] int id,
         CancellationToken cancellationToken = default)
     {
