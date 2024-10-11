@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using Google.Protobuf;
 using Grpc.Net.Client;
 using OddDotCSharp;
-using OddDotNet.Proto.Spans.V1;
+using OddDotNet.Proto.Trace.V1;
 using TodoWebApp.Models;
 
 namespace TodoTests;
@@ -21,9 +21,9 @@ public class GetTodosShould
 
         var httpClient = app.CreateHttpClient("todo");
         await resourceNotificationService.WaitForResourceAsync("todo", KnownResourceStates.Running)
-            .WaitAsync(TimeSpan.FromSeconds(30));
+            .WaitAsync(TimeSpan.FromSeconds(5));
         await resourceNotificationService.WaitForResourceAsync("odddotnet", KnownResourceStates.Running)
-            .WaitAsync(TimeSpan.FromSeconds(30));
+            .WaitAsync(TimeSpan.FromSeconds(5));
 
         var todo = new CreateTodoItemRequest
         {
@@ -79,8 +79,8 @@ public class GetTodosShould
         var spanQueryResponse = await spanQueryServiceClient.QueryAsync(spanQueryRequest);
 
         var firstRequestSpans =
-            spanQueryResponse.Spans.Where(span => span.TraceId == ByteString.CopyFrom(firstTraceIdAsBytes));
-        var secondRequestSpans = spanQueryResponse.Spans.Where(span => span.TraceId == ByteString.CopyFrom(secondTraceIdAsBytes));
+            spanQueryResponse.Spans.Where(span => span.Span.TraceId == ByteString.CopyFrom(firstTraceIdAsBytes));
+        var secondRequestSpans = spanQueryResponse.Spans.Where(span => span.Span.TraceId == ByteString.CopyFrom(secondTraceIdAsBytes));
         
         // Assert
         const string instrumentationScopeName = "OpenTelemetry.Instrumentation.EntityFrameworkCore";
@@ -91,5 +91,7 @@ public class GetTodosShould
         // The second call should have used cache instead of the database, so verify this span is NOT present
         Assert.DoesNotContain(secondRequestSpans, 
             span => span.InstrumentationScope.Name == instrumentationScopeName);
+
+        await app.StopAsync();
     }
 }
