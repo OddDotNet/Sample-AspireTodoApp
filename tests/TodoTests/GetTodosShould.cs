@@ -67,7 +67,7 @@ public class GetTodosShould : IAsyncLifetime
                     // Filters added in here will be OR-ed (||)
                     orFilters.AddTraceIdFilter(firstTraceIdAsBytes,
                         ByteStringCompareAsType.Equals);
-                    orFilters.AddTraceIdFilter(firstTraceIdAsBytes,
+                    orFilters.AddTraceIdFilter(secondTraceIdAsBytes,
                         ByteStringCompareAsType.Equals);
                 });
             })
@@ -76,18 +76,18 @@ public class GetTodosShould : IAsyncLifetime
         // Start the query
         var spanQueryResponse = await _spanQueryServiceClient.QueryAsync(spanQueryRequest);
 
-        var firstRequestSpans = spanQueryResponse.Spans.Where(span => span.Span.TraceId == ByteString.CopyFrom(firstTraceIdAsBytes));
-        var secondRequestSpans = spanQueryResponse.Spans.Where(span => span.Span.TraceId == ByteString.CopyFrom(secondTraceIdAsBytes));
+        var firstRequestSpans = spanQueryResponse.Spans.Where(span => span.Span.TraceId == ByteString.CopyFrom(firstTraceIdAsBytes)).ToList();
+        var secondRequestSpans = spanQueryResponse.Spans.Where(span => span.Span.TraceId == ByteString.CopyFrom(secondTraceIdAsBytes)).ToList();
         
         const string instrumentationScopeName = "OpenTelemetry.Instrumentation.EntityFrameworkCore";
         
         // The first call should have hit the database, so verify that call
         Assert.Contains(firstRequestSpans,
-            span => span.InstrumentationScope.Name == instrumentationScopeName);
+            span => string.Equals(span.InstrumentationScope.Name, instrumentationScopeName));
         
         // The second call should have used cache instead of the database, so verify this span is NOT present
         Assert.DoesNotContain(secondRequestSpans, 
-            span => span.InstrumentationScope.Name == instrumentationScopeName);
+            span => string.Equals(span.InstrumentationScope.Name, instrumentationScopeName));
     }
 
     public async Task InitializeAsync()
