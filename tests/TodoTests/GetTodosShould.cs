@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using System.Net.Http.Json;
+using Aspire.Hosting;
 using Google.Protobuf;
 using Grpc.Net.Client;
 using OddDotCSharp;
+using OddDotNet.Proto.Common.V1;
 using OddDotNet.Proto.Trace.V1;
 using TodoWebApp.Models;
 
@@ -14,7 +16,7 @@ public class GetTodosShould : IAsyncLifetime
     private DistributedApplication _app;
     private HttpClient _todoClient;
     private SpanQueryService.SpanQueryServiceClient _spanQueryServiceClient;
-#pragma warning enable CS8618
+#pragma warning restore CS8618
     
     [Fact]
     public async Task UseCacheOnSecondRequest()
@@ -97,26 +99,10 @@ public class GetTodosShould : IAsyncLifetime
         var resourceNotificationService = _app.Services.GetRequiredService<ResourceNotificationService>();
         await _app.StartAsync();
         _todoClient = _app.CreateHttpClient("todo");
-        var oddDotNetClient = _app.CreateHttpClient("odddotnet");
         await resourceNotificationService.WaitForResourceAsync("todo", KnownResourceStates.Running)
-            .WaitAsync(TimeSpan.FromSeconds(5));
+            .WaitAsync(TimeSpan.FromSeconds(30));
         await resourceNotificationService.WaitForResourceAsync("odddotnet", KnownResourceStates.Running)
-            .WaitAsync(TimeSpan.FromSeconds(5));
-
-        // .NET Aspire 8.2 does not have health check capabilities or the ability for a resource to
-        // report healthy before continuing. .NET Aspire 9 *WILL* have it, but until then, perform
-        // a manual health check.
-        bool oddDotNetIsHealthy;
-        const int maxAttempts = 3;
-        int currentAttempt = 0;
-        do
-        {
-            currentAttempt++;
-            var healthCheckResponse = await oddDotNetClient.GetAsync("/healthz");
-            oddDotNetIsHealthy = healthCheckResponse.IsSuccessStatusCode;
-            if (!oddDotNetIsHealthy)
-                await Task.Delay(TimeSpan.FromSeconds(1));
-        } while (!oddDotNetIsHealthy && currentAttempt <= maxAttempts);
+            .WaitAsync(TimeSpan.FromSeconds(30));
         
         var channel = GrpcChannel.ForAddress(_app.GetEndpoint("odddotnet", "grpc"));
         _spanQueryServiceClient = new SpanQueryService.SpanQueryServiceClient(channel);
